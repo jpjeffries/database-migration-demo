@@ -1,0 +1,122 @@
+Workshop Guide
+
+Pre-requisities
+1. Install VirtualBox (https://www.virtualbox.org/) on your laptop
+
+https://download.virtualbox.org/virtualbox/6.0.8/VirtualBox-6.0.8-130520-OSX.dmg
+
+Supported host OS:
+https://www.virtualbox.org/manual/ch01.html#hostossupport
+
+Minimum hardware requirements:
+Reasonably powerful x86 hardware. Any recent Intel or AMD processor.
+2GB RAM minimum
+10GB free space on harddisk / SSD
+
+2. Download the workshop image
+
+https://console.cloud.google.com/storage/browser/postgres-db-migration
+
+3. Import the image into VirtualBox
+
+Username: osboxes
+Password: osboxes.org
+Root Account Password: osboxes.org
+
+Username: postgres
+Password: postgres
+
+
+On GCP
+1. Spin up Compute Engine VM
+
+2. Connect to instance using Cloud Shell
+
+3. Prepare to install PostgreSQL 11
+Switch to root
+Download RPM
+
+rpm -Uvh https://yum.postgresql.org/11/redhat/rhel-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+
+4. Install PostgreSQL 11 using yum
+
+yum install postgresql11-server
+
+Initialise PGDATA
+
+/usr/pgsql-11/bin/postgresql-11-setup initdb
+
+Check postgres user exists
+
+id postgres
+
+On VM
+5. Setup database for replication on “Master”
+
+get PGDATA path
+
+env | grep PGDATA
+
+Backup postgresql config file
+
+cd $PGDATA
+cp postgresql.conf postgresql.conf.bak
+
+6. Edit (append) the following parameters in postgresql.conf
+
+wal_level = 'hot_standby'archive_mode = onarchive_command = 'test ! -f /var/lib/pgsql/11/archive/%f && cp %p /var/lib/pgsql/11/archive/%f'max_wal_senders = 3listen_addresses = '*'wal_keep_segments = 8
+
+7. Create the archive directory and restart the database instance
+
+cd $PGDATA/..
+mkdir archive
+sudo systemctl restart postgresql-11.service
+
+8. Check the database archiver is creating files
+
+ls -l archive
+
+9. As the postgres user take a full backup from the running master servercd /tmpecho "select pg_start_backup('label',true);" | psqltar cvfz postgresql_20190921.tar.gz $PGDATA
+
+On GCP
+10. Create a Cloud Storage bucket in your GCP project.Example gs://pg-repo-<project-id>/
+
+On VM
+11. Upload the database dump file to the Cloud Storage Bucket
+gsutil cp postgresql_20190921.tar.gz gs://pg-repo-<project-id>/
+
+On GCP
+12. Download the backup file from the Cloud Storage bucket to the GCP master
+
+su - postgres
+gsutil cp gs://pg-repo-<project-id>/postgresql_20190921.tar.gz /tmp
+
+13. As root stop the new master instance
+
+systemctl stop postgresql-11.service
+
+14. As postgres user restore the backup file into the GCP master
+
+cd /tmp ; tar xvf postgresql_20190921.tar.gz
+
+15. As postgres user create a recovery.conf file in the $PGDATA directory
+
+standby_mode     = 'on'primary_conninfo = 'port=5432 host=${running_master_ip} user=${replication_user} application_name =cloud_master'trigger_file     = '/tmp/failover.postgresql.5432'
+16. As root start the new master database instance
+
+systemctl start postgresql-11.service
+
+17. Check the PostgreSQL error log for replication status
+
+tail -f /var/log/postgresql/postgresql*log
+
+18. Logon to new master database
+
+su - postgres
+psql -d demodb
+\d
+\q
+
+19. Switchover to new master database by creating trigger file
+
+touch /tmp/failover.postgresql.5432
