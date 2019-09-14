@@ -1,0 +1,83 @@
+On GCP
+______
+
+Initialise gcloud environment
+cd IdeaProjects
+. gcloud-init
+
+pwd
+
+Initialise Terraform
+terraform init
+
+Terraform plan and apply
+terraform plan
+terraform apply
+
+Change Postgres user default password on CloudSQL
+
+Connect to instance with Cloud Shell
+gcloud sql connect [INSTANCE_ID] --user=postgres
+gcloud sql connect demo-instance --user=postgres
+
+Create database
+create database demodb;
+\l
+
+On VM
+_____
+
+psql -U postgres -d demodb
+demodb=# \d
+              List of relations
+ Schema |      Name       | Type  |  Owner
+--------+-----------------+-------+----------
+ public | city            | table | postgres
+ public | country         | table | postgres
+ public | countrylanguage | table | postgres
+(3 rows)
+
+
+\q
+
+Backup DB using pg_dump
+pg_dump -U postgres --format=plain --no-owner --no-acl demodb \
+    | sed -E 's/(DROP|CREATE|COMMENT ON) EXTENSION/-- \1 EXTENSION/g' > pg_dump.sql
+
+Run gcloud init to initialize the gcloud environment:
+gcloud init
+
+Describe target database instance
+gcloud sql instances describe demo-instance
+
+Add the service account to the bucket ACL as a writer:
+SA_NAME=$(gcloud sql instances describe demo-instance --project=database-migration-demo --format="value(serviceAccountEmailAddress)")
+gsutil acl ch -u ${SA_NAME}:R gs://db-export-store-bucket;
+
+Copy db_dump.sql to gcp bucket
+gsutil cp pg_dump.sql gs://db-export-store-bucket
+
+Add the service account to the import file as a reader:
+gsutil acl ch -u ${SA_NAME}:R gs://db-export-store-bucket/pg_dump.sql;
+
+On GCP
+______
+
+Import the SQL dump from the bucket
+gcloud sql import sql [INSTANCE_NAME] gs://[BUCKET_NAME]/[IMPORT_FILE_NAME] \
+                            --database=[DATABASE_NAME]
+
+gcloud sql import sql demo-instance gs://db-export-store-bucket/pg_dump.sql --database=demodb
+
+Login to cloud database instance from Cloud Shell to verify objects exist
+gcloud sql connect demodbdemo-instance --user=postgres
+\c demodb
+\d
+select * from public.countrylanguage where countrycode = 'SGP';
+
+On VM
+_____
+
+psql -U postgres -d demodb
+\d
+select * from public.countrylanguage where countrycode = 'SGP';
