@@ -21,7 +21,7 @@ variable "project_id" {
 
 variable "name" {
   description = "The name of the Cloud SQL resources"
-  default = "demodb"
+  default = "demo-instance"
 }
 
 // required
