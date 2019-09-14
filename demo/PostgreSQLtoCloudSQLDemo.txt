@@ -1,5 +1,5 @@
-On GCP
-______
+On laptop
+_________
 
 Initialise gcloud environment
 cd IdeaProjects
@@ -13,6 +13,9 @@ terraform init
 Terraform plan and apply
 terraform plan
 terraform apply
+
+On GCP
+______
 
 Change Postgres user default password on CloudSQL
 
@@ -70,7 +73,7 @@ gcloud sql import sql [INSTANCE_NAME] gs://[BUCKET_NAME]/[IMPORT_FILE_NAME] \
 gcloud sql import sql demo-instance gs://db-export-store-bucket/pg_dump.sql --database=demodb
 
 Login to cloud database instance from Cloud Shell to verify objects exist
-gcloud sql connect demodbdemo-instance --user=postgres
+gcloud sql connect demo-instance --user=postgres
 \c demodb
 \d
 select * from public.countrylanguage where countrycode = 'SGP';
