@@ -13,6 +13,8 @@ Reasonably powerful x86 hardware. Any recent Intel or AMD processor.
 2GB RAM minimum
 10GB free space on harddisk / SSD
 
+Hardware requirements for hosting a 64 bit guest, eg AMD SVM and intel VT-x and VT-d.
+
 2. Download the workshop image
 
 https://console.cloud.google.com/storage/browser/postgres-db-migration
@@ -34,6 +36,8 @@ On GCP
 
 3. Prepare to install PostgreSQL 11
 Switch to root
+sudo su -
+
 Download RPM
 
 rpm -Uvh https://yum.postgresql.org/11/redhat/rhel-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
@@ -64,7 +68,11 @@ cp postgresql.conf postgresql.conf.bak
 
 6. Edit (append) the following parameters in postgresql.conf
 
-wal_level = 'hot_standby'archive_mode = onarchive_command = 'test ! -f /var/lib/pgsql/11/archive/%f && cp %p /var/lib/pgsql/11/archive/%f'max_wal_senders = 3listen_addresses = '*'wal_keep_segments = 8
+wal_level = 'hot_standby'archive_mode = on
+archive_command = 'test ! -f /var/lib/pgsql/11/archive/%f && cp %p /var/lib/pgsql/11/archive/%f'
+max_wal_senders = 3
+listen_addresses = '*'
+wal_keep_segments = 8
 
 7. Create the archive directory and restart the database instance
 
@@ -101,16 +109,23 @@ cd /tmp ; tar xvf postgresql_20190921.tar.gz
 
 15. As postgres user create a recovery.conf file in the $PGDATA directory
 
-standby_mode     = 'on'primary_conninfo = 'port=5432 host=${running_master_ip} user=${replication_user} application_name =cloud_master'trigger_file     = '/tmp/failover.postgresql.5432'
+standby_mode     = 'on'
+primary_conninfo = 'port=5432 host=${running_master_ip} user=${replication_user} application_name =cloud_master'
+trigger_file     = '/tmp/failover.postgresql.5432'
+
 16. As root start the new master database instance
 
 systemctl start postgresql-11.service
 
-17. Check the PostgreSQL error log for replication status
+17. Check postgres service is running
+
+systemctl status postgresql-11.service
+
+18. Check the PostgreSQL error log for replication status
 
 tail -f /var/log/postgresql/postgresql*log
 
-18. Logon to new master database
+19. Logon to new master database
 
 su - postgres
 psql -d demodb
