@@ -125,7 +125,7 @@ systemctl status postgresql-11.service
 
 18. Check the PostgreSQL error log for replication status
 
-tail -f /var/log/postgresql/postgresql*log
+tail -f /var/lib/pgsql/11/data/log/postgresql*log
 
 19. Logon to new master database
 
