@@ -32,6 +32,8 @@ Password: postgres
 On GCP
 1. Spin up Compute Engine VM
 
+Choose a CentOS 7 image with machine type: n1-standard-1, with 1 vCPU and 3.75 GB memory
+
 2. Connect to instance using Cloud Shell
 
 3. Prepare to install PostgreSQL 11
