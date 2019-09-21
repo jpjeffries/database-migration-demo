@@ -70,7 +70,8 @@ cp postgresql.conf postgresql.conf.bak
 
 6. Edit (append) the following parameters in postgresql.conf
 
-wal_level = 'hot_standby'archive_mode = on
+wal_level = 'hot_standby'
+archive_mode = on
 archive_command = 'test ! -f /var/lib/pgsql/11/archive/%f && cp %p /var/lib/pgsql/11/archive/%f'
 max_wal_senders = 3
 listen_addresses = '*'
