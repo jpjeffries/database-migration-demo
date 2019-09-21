@@ -87,7 +87,11 @@ sudo systemctl restart postgresql-11.service
 
 ls -l archive
 
-9. As the postgres user take a full backup from the running master servercd /tmpecho "select pg_start_backup('label',true);" | psqltar cvfz postgresql_20190921.tar.gz $PGDATA
+9. As the postgres user take a full backup from the running master server
+
+cd /tmp
+echo "select pg_start_backup('label',true);" | psql
+tar cvfz postgresql_20190921.tar.gz $PGDATA
 
 On GCP
 10. Create a Cloud Storage bucket in your GCP project.Example gs://pg-repo-<project-id>/
